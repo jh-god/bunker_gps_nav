@@ -1,0 +1,50 @@
+topics:
+  base_gps: /smc_2000/fix
+  rover_gps: /smc_plus/fix
+  relposned: /smc_plus/relposned
+  imu: /imu
+  wheel_odom: /odom
+  nonground: /patchworkpp/nonground
+  obstacles: /navigation/obstacles
+  cmd_vel: /cmd_vel
+  cmd_vel_nav: /navigation/cmd_vel_raw
+  gps_goal: /gps_goal
+  rviz_goal: /goal_pose
+frames:
+  map: map
+  odom: odom
+  base: base_link
+  lidar: os_lidar
+datum:
+  # Use the first synchronized RTK FIX from the real receivers as origin.
+  # For manual mode, add measured latitude, longitude and altitude (metres).
+  mode: auto
+heading_mount_offset_deg: 90.0
+footprint: '[[0.65,0.45],[0.65,-0.45],[-0.65,-0.45],[-0.65,0.45]]'
+drivers:
+  # Start existing robot/sensor drivers separately, or fill in their launch files here.
+  bunker:
+    enabled: false
+    package: ''
+    launch_file: ''
+    arguments: {}
+  ouster:
+    enabled: false
+    package: ''
+    launch_file: ''
+    arguments: {}
+  imu:
+    enabled: false
+    package: ''
+    launch_file: ''
+    arguments: {}
+  gnss:
+    enabled: false
+    package: ''
+    launch_file: ''
+    arguments: {}
+  patchworkpp:
+    enabled: false
+    package: ''
+    launch_file: ''
+    arguments: {}

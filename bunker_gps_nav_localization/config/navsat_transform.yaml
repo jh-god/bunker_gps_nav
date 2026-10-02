@@ -1,0 +1,15 @@
+navsat_transform:
+  ros__parameters:
+    frequency: 10.0
+    delay: 0.0
+    magnetic_declination_radians: 0.0
+    yaw_offset: 0.0
+    zero_altitude: true
+    publish_filtered_gps: false
+    use_odometry_yaw: false
+    wait_for_datum: false
+    # Humble 3.5.4 mixes UTM updates with LocalCartesian initialization.
+    # Use the consistent UTM path, including meridian convergence correction.
+    use_local_cartesian: false
+    broadcast_cartesian_transform: false
+    transform_timeout: 0.1

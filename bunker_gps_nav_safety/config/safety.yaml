@@ -1,0 +1,11 @@
+navigation_supervisor_node:
+  ros__parameters:
+    rtk_timeout: 1.0
+    float_grace_period: 3.0
+    heading_timeout: 4.0
+    sensor_timeout: 1.0
+    cmd_timeout: 0.5
+    max_speed: 0.6
+    float_speed: 0.3
+    max_yaw_rate: 0.6
+    allow_reversing: false
