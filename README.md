@@ -76,6 +76,9 @@ ros2 launch bunker_gps_nav_bringup gps_navigation.launch.py
 ```
 
 - RViz 동시 실행: 명령 뒤에 `rviz:=true` 추가
+- RViz의 OpenStreetMap 도로 지도는 `/gnss/fix_center`를 기준으로 표시. 지도 타일을 받으려면 RViz 실행 PC의 인터넷 연결 필요
+- `/gnss/fix_center`의 `frame_id`는 `base_link`. GNSS 안테나 중점과 `base_link`가 일치하므로 추가 위치 보정 없음
+- RViz 실행 PC에 `rviz_satellite`가 필요하며 위 `rosdep install` 명령으로 설치
 - 사용 시간: 실제 시간 (`use_sim_time=false`)
 - 소스 YAML 수정 후: 다시 빌드해 설치 경로에 반영
 - 외부 YAML 사용 시: 아래 인자로 경로 지정
@@ -108,6 +111,8 @@ ros2 launch bunker_gps_nav_bringup gps_navigation.launch.py \
 2. **2D Goal Pose**로 목표 위치와 방향 지정
 
 - 제공 설정: [gps_navigation.rviz](bunker_gps_nav_nav2/rviz/gps_navigation.rviz)
+- 지도 출처: © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright). 표시되는 타일은 위성 사진이 아닌 도로 지도
+- 지도가 보이지 않으면 `/gnss/fix_center` 발행, `map` → `base_link` TF, RViz의 OpenStreetMap display 상태와 인터넷 연결을 확인
 - 전달 경로: `/goal_pose` → goal bridge → `NavigateToPose`
 - 중복 전달 방지: Nav2 내부 goal 구독은 별도 토픽으로 remap
 

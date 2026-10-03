@@ -10,6 +10,22 @@ Visualization Manager:
     Background Color: 40; 40; 40
     Frame Rate: 30
   Displays:
+    - Class: rviz_satellite/AerialMap
+      Name: OpenStreetMap - © OpenStreetMap contributors
+      Enabled: true
+      Value: true
+      Topic:
+        Value: /gnss/fix_center
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+      Object URI: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+      Draw Behind: true
+      Alpha: 0.9
+      Zoom: 18
+      Blocks: 1
+      Timeout: 3
     - Class: rviz_default_plugins/Grid
       Name: Grid
       Enabled: true
