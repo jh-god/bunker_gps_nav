@@ -19,6 +19,7 @@ RViz의 **2D Goal Pose**와 **위도·경도·방향 입력**을 지원합니다
 mkdir -p ~/bunker_gps_navigation_ws/src
 cd ~/bunker_gps_navigation_ws/src
 git clone https://github.com/jh-god/bunker_gps_nav.git
+cd ~/bunker_gps_navigation_ws
 source /opt/ros/humble/setup.bash
 rosdep install --from-paths src --ignore-src -r -y
 colcon build --parallel-workers 2 --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
@@ -26,10 +27,17 @@ source install/setup.bash
 ```
 
 ### 소스 업데이트
+
 - 소스 갱신 → 의존성 설치 → 재빌드 → 환경 적용 순서
+
 ```bash
-cd ~/bunker_gps_navigation_ws/src
-git -C pull --ff-only
+cd ~/bunker_gps_navigation_ws/src/bunker_gps_nav
+git pull --ff-only
+cd ~/bunker_gps_navigation_ws
+source /opt/ros/humble/setup.bash
+rosdep install --from-paths src --ignore-src -r -y
+colcon build --parallel-workers 2 --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+source install/setup.bash
 ```
 
 ## 드라이버 연결 및 실행
@@ -288,3 +296,12 @@ source install/setup.bash
 colcon test --base-paths src --event-handlers console_direct+
 colcon test-result --verbose
 ```
+
+## 실차 사용 전 확인
+
+- 로봇에서 의존성 설치와 `colcon build`를 완료하고, Bunker·GNSS 두 대·IMU·Ouster·Patchwork++의 입력 토픽을 확인합니다.
+- TF 발행 주체와 센서 시각을 확인합니다. `odom → base_link`는 Bunker, `map → odom`은 Global EKF가 발행해야 합니다.
+- 안테나 배치(왼쪽 base, 오른쪽 rover)와 실제 차량 방향을 비교하고, GNSS 안테나 중점과 `base_link` 원점의 위치 차이를 측정합니다.
+- RViz에서 차체가 장애물로 표시되지 않고 실제 장애물이 올바른 위치에 표시되는지 확인한 뒤, 차체 제외 박스와 footprint를 실측값에 맞춥니다.
+- `/navigation/motion_allowed`와 `/diagnostics`를 확인하고, GNSS·LiDAR 입력 중단 시 `/cmd_vel`이 0이 되는지 및 하드웨어 비상정지가 작동하는지 시험합니다.
+- 첫 주행은 통제된 공간에서 속도를 낮추고 가까운 목표 하나로 시작해 경로 추종과 정지·도착 오차를 확인합니다.
