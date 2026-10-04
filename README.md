@@ -56,7 +56,7 @@ source install/setup.bash
 | `/smc_2000/fix` | `sensor_msgs/msg/NavSatFix` | 왼쪽 base |
 | `/smc_plus/fix` | `sensor_msgs/msg/NavSatFix` | 오른쪽 rover |
 | `/smc_plus/relposned` | `ublox_msgs/msg/NavRELPOSNED9` | base→rover baseline heading |
-| `/patchworkpp/nonground` | `sensor_msgs/msg/PointCloud2` | frame_id=base_link |
+| `/patchworkpp/nonground` | `sensor_msgs/msg/PointCloud2` | frame_id=os_lidar |
 | TF | — | Bunker가 odom → base_link 발행, 기존 URDF/TF로 센서 연결 |
 
 주 설정: [system.yaml](bunker_gps_nav_bringup/config/system.yaml)
@@ -211,9 +211,10 @@ yaw_ros = π/2 − heading_baseline + heading_mount_offset
 
 ### PointCloud 처리
 
-- 입력: `/patchworkpp/nonground`
-- 기준 frame: `base_link`
-- 다른 frame 입력 시: TF 변환 후 필터 적용
+- 입력: `/patchworkpp/nonground`, frame_id=`os_lidar`
+- 처리 순서: TF로 포인트 좌표를 `os_lidar` → `base_link`로 변환한 뒤 필터 적용
+- 차체 제외 박스·높이·거리 파라미터와 출력 PointCloud의 기준 frame: `base_link`
+- 입력이 이미 `base_link`이면 변환 생략, 필요한 TF를 조회하지 못하면 해당 클라우드 처리 제외
 - 차체 제외 범위: 박스 내부와 경계면
 - 설정 파일: [obstacle_filter.yaml](bunker_gps_nav_perception/config/obstacle_filter.yaml)
 
