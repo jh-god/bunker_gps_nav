@@ -2,13 +2,13 @@ obstacle_cloud_filter_node:
   ros__parameters:
     # Initial body box in base_link metres; tune all six bounds to the real body.
     self_body_min_x: -0.65
-    self_body_max_x: 0.65
-    self_body_min_y: -0.45
-    self_body_max_y: 0.45
+    self_body_max_x: 3.0
+    self_body_min_y: -0.85
+    self_body_max_y: 0.85
     self_body_min_z: -0.30
     self_body_max_z: 0.60
-    min_obstacle_height: 0.05
-    max_obstacle_height: 1.5
+    min_obstacle_height: 0.2
+    max_obstacle_height: 0.5
     min_range: 0.3
     max_range: 50.0
     use_voxel_filter: true
