@@ -62,10 +62,7 @@ source install/setup.bash
 주 설정: [system.yaml](bunker_gps_nav_bringup/config/system.yaml)
 
 - `topics`: 센서와 제어 토픽명 설정
-- `drivers.*.enabled: false`: 별도로 실행 중인 드라이버 사용 — 기본값
-- 드라이버 통합 실행 방법:
-  1. 설치된 드라이버의 `package`, `launch_file`, `arguments` 입력
-  2. 해당 항목의 `enabled`를 `true`로 변경
+- 드라이버는 별도로 실행하며, 이 패키지는 입력 토픽과 TF를 사용
 
 ### Navigation 실행
 
@@ -286,6 +283,9 @@ Nav2 → /navigation/cmd_vel_raw → supervisor → /cmd_vel → Bunker
 
 ### 단계별 실행
 
+- 전체 실행: `gps_navigation.launch.py`에서 아래 세 launch를 `IncludeLaunchDescription`으로 호출
+- 각 부분 launch는 해당 노드를 직접 구성하며 단독 실행도 가능
+- `system_config`는 모든 부분 launch에 전달, `nav2_config`와 `rviz`는 Navigation에 전달
 - 위치 추정: `localization.launch.py`
 - 장애물 처리: `perception.launch.py`
 - Navigation: `navigation.launch.py`
