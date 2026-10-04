@@ -21,7 +21,7 @@ def generate_launch_description():
             'system_config', default_value=str(bringup / 'config' / 'system.yaml')),
         DeclareLaunchArgument(
             'nav2_config', default_value=str(nav2 / 'config' / 'nav2_params.yaml')),
-        DeclareLaunchArgument('rviz', default_value='false'),
+        DeclareLaunchArgument('rviz', default_value='true'),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(str(bringup / 'launch' / 'localization.launch.py')),
             launch_arguments={'system_config': system_config}.items()),
