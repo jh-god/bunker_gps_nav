@@ -1,0 +1,8 @@
+<library path="bunker_gps_nav_rviz">
+  <class name="bunker_gps_nav_rviz/AddWaypoint" type="bunker_gps_nav_rviz::AddWaypoint" base_class_type="rviz_common::Tool">
+    <description>Click and drag to append a waypoint with its heading. Press W for each point.</description>
+  </class>
+  <class name="bunker_gps_nav_rviz/Waypoints" type="bunker_gps_nav_rviz::WaypointsPanel" base_class_type="rviz_common::Panel">
+    <description>Start, resume, cancel and edit the guarded Bunker waypoint route.</description>
+  </class>
+</library>

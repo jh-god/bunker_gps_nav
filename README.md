@@ -1,8 +1,8 @@
 # Bunker GPS Navigation
 
-Bunker Pro 2.0을 위한 ROS 2 GPS 기반 내비게이션 패키지입니다. Dual RTK GNSS, wheel odometry, IMU로 위치와 방향을 추정하고, Patchwork++의 장애물 정보를 Nav2에 연결해 정적 지도 없이 단일 목표까지 주행합니다.
+Bunker Pro 2.0을 위한 ROS 2 GPS 기반 내비게이션 패키지입니다. Dual RTK GNSS, wheel odometry, IMU로 위치와 방향을 추정하고, Patchwork++의 장애물 정보를 Nav2에 연결해 정적 지도 없이 목표까지 주행합니다.
 
-RViz의 **2D Goal Pose**와 **위도·경도·방향 입력**을 지원합니다.
+RViz의 **2D Goal Pose**, **여러 waypoint 순차 주행**, **위도·경도·방향 입력**을 지원합니다.
 
 ## 설치 및 빌드
 
@@ -36,7 +36,7 @@ git pull --ff-only
 cd ~/bunker_gps_navigation_ws
 source /opt/ros/humble/setup.bash
 rosdep install --from-paths src --ignore-src -r -y
-colcon build --parallel-workers 2 --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+colcon build --symlink-install
 source install/setup.bash
 ```
 
@@ -113,6 +113,40 @@ ros2 launch bunker_gps_nav_bringup gps_navigation.launch.py \
 - 전달 경로: `/goal_pose` → goal bridge → `NavigateToPose`
 - 중복 전달 방지: Nav2 내부 goal 구독은 별도 토픽으로 remap
 
+### RViz waypoint
+
+```bash
+ros2 launch bunker_gps_nav_bringup gps_navigation.launch.py rviz:=true
+```
+
+1. Fixed Frame을 `map`으로 설정합니다.
+2. 상단 **Add Waypoint** 도구를 선택하거나 **W**를 누릅니다.
+3. 지도에서 클릭하고 드래그해 위치와 도착 방향을 지정합니다. 각 지점마다 W를 다시 눌러 등록합니다.
+4. 번호와 연결선을 확인한 뒤 **Waypoints** 패널의 **Start / Resume**을 누릅니다.
+5. **Cancel**은 현재 목표를 취소합니다. Nav2의 취소 처리가 끝나면 **Undo Last**로 마지막 지점을 삭제하거나 **Clear**로 전체 목록을 지울 수 있습니다.
+
+- 등록만으로 로봇은 출발하지 않습니다. 최대 200개까지 메모리에 보관하며 노드를 재시작하면 목록이 사라집니다.
+- 시작 시 로봇에서 첫 미완료 지점까지, 이후에는 지점 사이의 거리가 각각 **25 m 이하**여야 합니다. 전체 경로 길이는 25 m를 넘을 수 있습니다.
+- 매 지점 전송 직전에도 **실제 로봇 위치에서 목표까지의 거리**와 이동 허용 상태를 다시 검사합니다. rolling costmap 안에 목표가 들어오도록 구간을 나눕니다.
+- 각 지점의 위치와 방향에 도착한 뒤 다음 지점을 실행합니다. 중간 정차 없이 통과하는 방식은 아닙니다.
+- 목표 거부·실패·취소, 이동 허용 해제, 허용 신호 1초 단절 시 주행을 중단합니다. 조건이 회복되어도 자동 재출발하지 않습니다. **Start / Resume**으로 첫 미완료 지점부터 다시 실행합니다.
+- waypoint 실행 및 취소 처리 중에는 새 waypoint와 단일 GPS/2D Goal Pose 입력을 받지 않습니다.
+- 표시: 노랑=대기, 주황=현재 목표, 초록=완료. 번호는 등록 순서입니다.
+- 전달 경로: `/navigation/waypoint_input` → goal bridge의 목록 → 각 지점별 `NavigateToPose`. 기존 supervisor의 속도 제한과 정지 처리를 함께 사용합니다.
+- waypoint 입력 토픽을 `system.yaml`의 `topics.rviz_waypoint`에서 변경하면 RViz의 Tool Properties → Add Waypoint → Topic도 같은 값으로 변경합니다. 별도 RViz 설정에서는 Panels → Add New Panel → `bunker_gps_nav_rviz/Waypoints`, 도구 추가 → `bunker_gps_nav_rviz/AddWaypoint`를 선택합니다.
+
+CLI에서도 동일한 제어 서비스를 사용할 수 있습니다 (`std_srvs/srv/Trigger`).
+
+```bash
+ros2 service call /navigation/waypoints/start std_srvs/srv/Trigger '{}'
+ros2 service call /navigation/waypoints/cancel std_srvs/srv/Trigger '{}'
+ros2 service call /navigation/waypoints/remove_last std_srvs/srv/Trigger '{}'
+ros2 service call /navigation/waypoints/clear std_srvs/srv/Trigger '{}'
+ros2 topic echo /navigation/waypoints/status
+```
+
+목록·실행 파라미터: [goal.yaml](bunker_gps_nav_goal/config/goal.yaml). 상태와 시각화 토픽은 각각 `/navigation/waypoints/status`, `/navigation/waypoints/markers`이며 transient-local QoS로 마지막 상태를 보관합니다.
+
 ### GPS 좌표
 
 ```bash
@@ -132,9 +166,9 @@ ros2 run bunker_gps_nav_goal send_gps_goal \
 
 | 항목 | 설정 |
 |---|---|
-| 지원 방식 | 단일 목표 |
+| 지원 방식 | 단일 목표, RViz waypoint 순차 실행 |
 | 초기 시험 거리 | 5–20 m |
-| 브리지 거리 제한 | 25 m |
+| 브리지 거리 제한 | 목표/waypoint 구간당 25 m |
 | 위치 허용오차 | 0.3 m |
 | 방향 허용오차 | 7° |
 
@@ -277,7 +311,8 @@ Nav2 → /navigation/cmd_vel_raw → supervisor → /cmd_vel → Bunker
 |---|---|
 | bunker_gps_nav_localization | GNSS 처리, datum, 두 EKF |
 | bunker_gps_nav_perception | 차체·장애물 필터 |
-| bunker_gps_nav_goal | GPS/RViz 목표와 CLI |
+| bunker_gps_nav_goal | GPS/RViz 목표, waypoint 목록·실행, CLI |
+| bunker_gps_nav_rviz | waypoint 등록 도구와 실행 패널 |
 | bunker_gps_nav_safety | 상태 감시, 최종 속도 제한 |
 | bunker_gps_nav_nav2 | Nav2 YAML, BT, RViz |
 | bunker_gps_nav_bringup | 통합/단계별 launch |
@@ -292,7 +327,7 @@ Nav2 → /navigation/cmd_vel_raw → supervisor → /cmd_vel → Bunker
 - Navigation: `navigation.launch.py`
 - 공통 조건: 실제 센서와 기존 TF 사용
 
-### 단위 테스트
+### 테스트
 
 ```bash
 cd ~/bunker_gps_navigation_ws
@@ -302,6 +337,8 @@ source install/setup.bash
 colcon test --base-paths src --event-handlers console_direct+
 colcon test-result --verbose
 ```
+
+goal 패키지는 모의 Nav2 서버·TF·이동 허용 신호를 사용해 waypoint 순서, 거리 제한, 취소/재개, 신호 단절, 목표 실패와 기존 단일/GPS 목표를 검증합니다. 실제 제어기는 실행하지 않으며 localhost 전용 ROS domain 224에서 테스트합니다.
 
 ## 실차 사용 전 확인
 

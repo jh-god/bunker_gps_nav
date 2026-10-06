@@ -15,6 +15,7 @@
   <exec_depend>nav2_bt_navigator</exec_depend>
   <exec_depend>nav2_lifecycle_manager</exec_depend>
   <exec_depend>rviz2</exec_depend>
+  <exec_depend>bunker_gps_nav_rviz</exec_depend>
   <exec_depend>rviz_satellite</exec_depend>
   <export><build_type>ament_cmake</build_type></export>
 </package>
