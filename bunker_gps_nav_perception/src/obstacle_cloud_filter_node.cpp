@@ -2,6 +2,7 @@
 #include <array>
 #include <algorithm>
 #include "bunker_gps_nav_perception/point_filter.hpp"
+#include "bunker_gps_nav_perception/radius_outlier_filter.hpp"
 #include <cmath>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -29,10 +30,16 @@ class ObstacleFilter : public rclcpp::Node {
     filter_.body_max_z = declare_parameter("self_body_max_z", 0.60);
     voxel_ = declare_parameter("use_voxel_filter", true);
     leaf_ = declare_parameter("voxel_leaf_size", 0.1);
+    outlier_.enabled = declare_parameter("use_radius_outlier_filter", false);
+    outlier_.radius = declare_parameter("outlier_radius", 0.2);
+    outlier_.min_neighbors = declare_parameter("outlier_min_neighbors", 1);
+    outlier_.max_range = declare_parameter("outlier_max_range", 3.0);
     timeout_ = declare_parameter("transform_timeout", 0.1);
     max_age_ = declare_parameter("max_cloud_age", 1.0);
     if (!(filter_.max_height > filter_.min_height && filter_.max_range > filter_.min_range && filter_.min_range >= 0 && leaf_ > 0 && timeout_>=0 && max_age_>0))
       throw std::invalid_argument("Invalid cloud filter parameters");
+    if (!bunker_gps_nav::valid_radius_outlier_config(outlier_))
+      throw std::invalid_argument("Outlier radius/range must be finite and positive; min_neighbors must be >= 1");
     const std::array<double,13> values = {filter_.min_height,filter_.max_height,
       filter_.min_range,filter_.max_range,filter_.body_min_x,filter_.body_max_x,
       filter_.body_min_y,filter_.body_max_y,filter_.body_min_z,filter_.body_max_z,
@@ -67,16 +74,18 @@ class ObstacleFilter : public rclcpp::Node {
       auto filtered=std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
       filtered->reserve(input.size());
       std::array<size_t,5> counts{};
-      // Non-finite -> self body -> height -> range; voxel downsampling follows.
+      // Non-finite -> self body -> height -> range -> near outliers -> voxel.
       for (const auto& p : input) {
         const auto result = bunker_gps_nav::classify_point(p.x,p.y,p.z,filter_);
         ++counts[static_cast<size_t>(result)];
         if (result == bunker_gps_nav::PointResult::Keep) filtered->push_back(p);
       }
+      const auto denoised = bunker_gps_nav::remove_near_outliers(filtered, outlier_);
+      const auto outlier_removed = filtered->size() - denoised->size();
       pcl::PointCloud<pcl::PointXYZ> downsampled;
-      if (voxel_ && !filtered->empty()) {
-        pcl::VoxelGrid<pcl::PointXYZ> v; v.setInputCloud(filtered); v.setLeafSize(leaf_,leaf_,leaf_); v.filter(downsampled);
-      } else downsampled=*filtered;
+      if (voxel_ && !denoised->empty()) {
+        pcl::VoxelGrid<pcl::PointXYZ> v; v.setInputCloud(denoised); v.setLeafSize(leaf_,leaf_,leaf_); v.filter(downsampled);
+      } else downsampled=*denoised;
       sensor_msgs::msg::PointCloud2 output; pcl::toROSMsg(downsampled,output);
       output.header=msg.header; output.header.frame_id=frame_; pub_->publish(output);
       const double ms=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
@@ -90,11 +99,13 @@ class ObstacleFilter : public rclcpp::Node {
       add("input_points",input.size());add("output_points",downsampled.size());add("processing_ms",ms);add("frequency_hz",dt>0?1/dt:0);
       add("non_finite_removed",counts[1]);add("self_body_removed",counts[2]);
       add("height_removed",counts[3]);add("range_removed",counts[4]);
+      add("outlier_removed",outlier_removed);
       d.status.push_back(s);diag_->publish(d);
     } catch (const std::exception& e) { RCLCPP_WARN_THROTTLE(get_logger(),*get_clock(),2000,"Cloud rejected: %s",e.what()); }
   }
   tf2_ros::Buffer buffer_;tf2_ros::TransformListener listener_;
   bunker_gps_nav::PointFilterConfig filter_;
+  bunker_gps_nav::RadiusOutlierConfig outlier_;
   std::string frame_;double leaf_,timeout_,max_age_;bool voxel_;
   std::chrono::steady_clock::time_point last_diag_{},last_cloud_{};
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_;

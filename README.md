@@ -253,7 +253,7 @@ yaw_ros = π/2 − heading_baseline + heading_mount_offset
 - 설정 파일: [obstacle_filter.yaml](bunker_gps_nav_perception/config/obstacle_filter.yaml)
 
 ```text
-remove non-finite → self-body exclusion → height → range → voxel downsample
+remove non-finite → self-body exclusion → height → range → near radius outliers → voxel downsample
 ```
 
 | 항목 | 초기값 |
@@ -267,6 +267,23 @@ remove non-finite → self-body exclusion → height → range → voxel downsam
 
 - 차체 박스와 1.30 × 0.90 m footprint는 실측에 맞춰 조정
 - 필터 진단: 점 수, 처리 시간, 주파수, 단계별 제거 개수
+
+### 근거리 LiDAR 고립점 제거
+
+`obstacle_filter.yaml`은 반경 이웃 검사(Radius Outlier Removal)를 켭니다. `base_link`의 XY 수평거리 3 m 이내 점에 대해, 3D 거리 0.2 m 안에 다른 점이 하나도 없으면 제거합니다. 3 m 밖의 점은 이 필터로 제거하지 않으며, 범위 경계 밖의 점도 근거리 점의 이웃으로 사용합니다. 실제 장애물의 여러 리턴을 하나로 줄이기 전, voxel downsampling보다 먼저 검사합니다.
+
+| 파라미터 | 기본 설정 | 의미 |
+|---|---|---|
+| `use_radius_outlier_filter` | `true` | 근거리 고립점 제거 사용 |
+| `outlier_radius` | `0.2` | 이웃 검색의 3D 반경(m) |
+| `outlier_min_neighbors` | `1` | 자신을 제외한 최소 이웃 점 수 |
+| `outlier_max_range` | `3.0` | 필터를 적용할 base_link XY 거리(m) |
+
+- `outlier_min_neighbors`를 높이거나 `outlier_radius`를 줄이면 더 강하게 제거합니다. `outlier_max_range`는 적용 범위만 바꿉니다.
+- 가까운 실제 장애물이라도 한 점만 반환하면 제거될 수 있습니다. 가는 기둥·낮은 장애물이 `/navigation/obstacles`에 유지되는지 확인한 뒤 적용하고, 필요하면 필터를 끄거나 검색 반경을 조정합니다. 촘촘한 노이즈 군집은 이웃이 있으므로 이 필터를 통과할 수 있습니다.
+- `/diagnostics`의 `perception/obstacle_filter`에서 `outlier_removed`, `processing_ms`, `frequency_hz`, `output_points`를 확인합니다.
+- 이 노드는 시작 시 파라미터를 읽습니다. YAML 수정 후 설치 경로에 반영하도록 재빌드하고 perception 노드를 재시작합니다. `ros2 param set`만으로 처리 값이 바뀌지는 않습니다.
+- 필터 출력에서 점이 사라져도 기존 costmap 표시가 남으면 clearing을 별도로 확인합니다. 현재 nonground 입력만으로는 지면·빈 공간을 나타내는 광선이 부족할 수 있으며, `observation_persistence: 0.0`은 costmap의 장애물 자동 만료 시간이 아닙니다.
 
 ### Nav2 구성
 
