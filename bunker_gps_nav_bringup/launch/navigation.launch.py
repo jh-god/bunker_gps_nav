@@ -40,6 +40,12 @@ def launch_setup(context):
         params['voxel_layer']['cloud'].update({
             'topic': topics['obstacles'], 'sensor_frame': frames['lidar'],
         })
+        clearing_source = params['voxel_layer'].get('clearing_cloud')
+        if clearing_source is not None:
+            clearing_source.update({
+                'topic': topics.get('clearing_cloud', '/ouster/points'),
+                'sensor_frame': frames['lidar'],
+            })
     for name in ['planner_server', 'controller_server', 'behavior_server', 'bt_navigator']:
         nav2_params[name]['ros__parameters']['use_sim_time'] = False
     # Nested costmap nodes must receive the full parameter YAML.

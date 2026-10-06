@@ -56,12 +56,13 @@ source install/setup.bash
 | `/smc_2000/fix` | `sensor_msgs/msg/NavSatFix` | 왼쪽 base |
 | `/smc_plus/fix` | `sensor_msgs/msg/NavSatFix` | 오른쪽 rover |
 | `/smc_plus/relposned` | `ublox_msgs/msg/NavRELPOSNED9` | base→rover baseline heading |
+| `/ouster/points` | `sensor_msgs/msg/PointCloud2` | 원본 LiDAR 관측, TF로 costmap 좌표계에 변환 가능해야 함 |
 | `/patchworkpp/nonground` | `sensor_msgs/msg/PointCloud2` | frame_id=os_lidar |
 | TF | — | Bunker가 odom → base_link 발행, 기존 URDF/TF로 센서 연결 |
 
 주 설정: [system.yaml](bunker_gps_nav_bringup/config/system.yaml)
 
-- `topics`: 센서와 제어 토픽명 설정
+- `topics`: 센서와 제어 토픽명 설정. `clearing_cloud`는 원본 LiDAR 입력이며 기본값은 `/ouster/points`
 - 드라이버는 별도로 실행하며, 이 패키지는 입력 토픽과 TF를 사용
 
 ### Navigation 실행
@@ -283,7 +284,24 @@ remove non-finite → self-body exclusion → height → range → near radius o
 - 가까운 실제 장애물이라도 한 점만 반환하면 제거될 수 있습니다. 가는 기둥·낮은 장애물이 `/navigation/obstacles`에 유지되는지 확인한 뒤 적용하고, 필요하면 필터를 끄거나 검색 반경을 조정합니다. 촘촘한 노이즈 군집은 이웃이 있으므로 이 필터를 통과할 수 있습니다.
 - `/diagnostics`의 `perception/obstacle_filter`에서 `outlier_removed`, `processing_ms`, `frequency_hz`, `output_points`를 확인합니다.
 - 이 노드는 시작 시 파라미터를 읽습니다. YAML 수정 후 설치 경로에 반영하도록 재빌드하고 perception 노드를 재시작합니다. `ros2 param set`만으로 처리 값이 바뀌지는 않습니다.
-- 필터 출력에서 점이 사라져도 기존 costmap 표시가 남으면 clearing을 별도로 확인합니다. 현재 nonground 입력만으로는 지면·빈 공간을 나타내는 광선이 부족할 수 있으며, `observation_persistence: 0.0`은 costmap의 장애물 자동 만료 시간이 아닙니다.
+- 필터에서 점을 제거하는 것과 기존 costmap 장애물을 지우는 것은 별도입니다. 아래의 원본 LiDAR clearing 관측으로 기존 점유 voxel을 통과하는 광선이 전달되는지 확인합니다.
+
+### 장애물 등록과 clearing 입력
+
+local/global costmap은 두 관측 소스를 사용합니다. 원본 `/ouster/points`는 추가 전처리 노드 없이 Nav2가 직접 구독합니다.
+
+| 관측 소스 | 입력 | marking | clearing | Nav2 관측 높이 범위 |
+|---|---|---|---|---|
+| `cloud` | `/navigation/obstacles` | true | false | Global: -0.3~0.6 m, Local: -0.25~0.6 m |
+| `clearing_cloud` | `/ouster/points` | false | true | Global/Local: -1.0~3.0 m |
+
+- 등록 입력은 기존 `/patchworkpp/nonground` → 장애물 필터 경로를 사용합니다. 원본 관측의 지면·배경점은 장애물로 등록하지 않고 광선 추적에만 사용합니다.
+- Nav2는 원본 cloud도 costmap 좌표계(Global=`map`, Local=`odom`)로 변환한 뒤 각 소스의 높이 범위를 적용합니다. clearing 범위는 지면 약 -0.3 m에 여유를 두고 높은 배경점도 유지하는 초기 설정입니다. 센서 높이·지형·TF의 Z 기준이 달라지면 해당 소스의 범위를 조정합니다.
+- 기존 voxel 공간(`origin_z=-0.3`, `z_resolution=0.1`, `z_voxels=16`, Z 범위 -0.3~1.3 m)과 레이어의 `max_obstacle_height=0.6`은 유지합니다. 관측 끝점이 voxel 공간 밖에 있어도 광선은 공간 경계까지 잘려서 추적됩니다.
+- `raytrace_min_range`는 두 costmap 모두 0.3 m, `raytrace_max_range`는 Global 29 m / Local 10 m입니다. 두 소스의 센서 원점은 `frames.lidar`(기본 `os_lidar`)를 사용합니다.
+- 토픽 변경은 `system.yaml`의 `topics.clearing_cloud`로 설정합니다. 기존 system 설정에 키가 없으면 `/ouster/points`를 사용합니다. 별도 `nav2_config`를 사용한다면 두 관측 소스와 각 소스의 설정을 함께 반영합니다.
+- 무반사 방향에는 자동으로 최대 거리 광선이 만들어지지 않습니다. 실제 광선이 기존 점유 voxel을 통과해야 지워지며, `observation_persistence: 0.0`은 장애물 자동 만료 시간이 아닙니다.
+- 디버깅 시 `publish_voxel_map: true`로 설정하고 Nav2를 재시작해 `/<local_costmap 또는 global_costmap>/voxel_grid`와 `clearing_endpoints`를 RViz에서 확인합니다.
 
 ### Nav2 구성
 
@@ -296,8 +314,7 @@ remove non-finite → self-body exclusion → height → range → near radius o
 | 재계획 주기 | 1 Hz |
 | 정적 지도·AMCL·SLAM | 사용하지 않음 |
 
-- Nonground만으로는 빈 광선 정보가 부족해 이동 장애물 잔상이 남을 수 있음
-- 잔상 발생 시: 현장 관측에 따라 clearing 입력 보완
+- 이동 장애물의 잔상은 원본 LiDAR clearing 관측과 실제 광선이 통과한 voxel을 확인
 - 미관측 공간은 free로 취급 — 센서가 관측하는 짧은 거리 시험을 대상으로 함
 
 ## 속도 및 상태 감시

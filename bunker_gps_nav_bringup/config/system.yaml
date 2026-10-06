@@ -6,6 +6,7 @@ topics:
   wheel_odom: /odom
   nonground: /patchworkpp/nonground
   obstacles: /navigation/obstacles
+  clearing_cloud: /ouster/points
   cmd_vel: /cmd_vel
   cmd_vel_nav: /navigation/cmd_vel_raw
   gps_goal: /gps_goal
