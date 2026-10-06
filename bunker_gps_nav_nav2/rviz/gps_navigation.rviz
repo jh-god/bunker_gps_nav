@@ -18,9 +18,23 @@ Panels:
       - /Current View1
     Name: Views
     Splitter Ratio: 0.5
+  - Class: bunker_gps_nav_rviz/Waypoints
+    Name: Waypoints
+    Service Namespace: /navigation/waypoints
 Visualization Manager:
   Class: ""
   Displays:
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: Waypoints
+      Namespaces: {}
+      Topic:
+        Depth: 1
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /navigation/waypoints/markers
+      Value: true
     - Alpha: 0.5
       Cell Size: 1
       Class: rviz_default_plugins/Grid
@@ -281,6 +295,8 @@ Visualization Manager:
       Hide Inactive Objects: true
     - Class: rviz_default_plugins/MoveCamera
     - Class: rviz_default_plugins/Select
+    - Class: bunker_gps_nav_rviz/AddWaypoint
+      Topic: /navigation/waypoint_input
     - Class: rviz_default_plugins/SetGoal
       Topic:
         Depth: 5
@@ -321,7 +337,7 @@ Window Geometry:
   Height: 1016
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd0000000100000000000001cb0000039efc0200000003fb000000100044006900730070006c006100790073010000003d000001d5000000c900fffffffb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000218000000e40000005c00fffffffb0000000a005600690065007700730100000302000000d9000000a400ffffff000005690000039e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000200000000000001cb000003b3fc0200000003fb000000100044006900730070006c006100790073010000002b000001ce0000001700fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007301000001ff000000bd0000001700fffffffb0000000a0056006900650077007301000002c20000011c0000001700ffffff0000000100000140000003b3fc0200000001fb000000120057006100790070006f0069006e00740073010000002b000003b30000001700ffffff00000423000003b300000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Tool Properties:
     collapsed: false
   Views:

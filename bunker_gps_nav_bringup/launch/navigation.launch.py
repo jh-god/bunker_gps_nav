@@ -93,6 +93,13 @@ def launch_setup(context):
                 'use_sim_time': False, 'map_frame': frames['map'], 'base_frame': frames['base'],
             }], remappings=[
                 ('gps_goal', topics['gps_goal']), ('goal_pose', topics['rviz_goal']),
+                ('waypoint', topics.get('rviz_waypoint', '/navigation/waypoint_input')),
+                ('waypoints/start', '/navigation/waypoints/start'),
+                ('waypoints/cancel', '/navigation/waypoints/cancel'),
+                ('waypoints/clear', '/navigation/waypoints/clear'),
+                ('waypoints/remove_last', '/navigation/waypoints/remove_last'),
+                ('waypoints/status', '/navigation/waypoints/status'),
+                ('waypoints/markers', '/navigation/waypoints/markers'),
                 ('odometry_gps', '/odometry/gps'), ('motion_allowed', '/navigation/motion_allowed'),
             ]),
     ]

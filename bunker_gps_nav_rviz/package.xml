@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>bunker_gps_nav_rviz</name>
+  <version>0.1.0</version>
+  <description>RViz waypoint registration and execution controls for Bunker navigation.</description>
+  <maintainer email="maintainer@example.com">Bunker navigation maintainers</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>qtbase5-dev</depend>
+  <depend>pluginlib</depend>
+  <depend>rclcpp</depend>
+  <depend>rviz_common</depend>
+  <depend>rviz_default_plugins</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

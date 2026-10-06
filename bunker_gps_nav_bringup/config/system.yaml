@@ -10,6 +10,7 @@ topics:
   cmd_vel_nav: /navigation/cmd_vel_raw
   gps_goal: /gps_goal
   rviz_goal: /goal_pose
+  rviz_waypoint: /navigation/waypoint_input
 frames:
   map: map
   odom: odom
