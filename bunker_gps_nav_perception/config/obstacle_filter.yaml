@@ -11,6 +11,13 @@ obstacle_cloud_filter_node:
     max_obstacle_height: 0.6
     min_range: 0.3
     max_range: 50.0
+    # Suppress isolated near-field hits before downsampling. The query point
+    # needs another point within a 0.2m 3D radius. Distant hits remain unchanged.
+    # Validate thin/low obstacles on the vehicle before increasing strength.
+    use_radius_outlier_filter: true
+    outlier_radius: 0.2
+    outlier_min_neighbors: 1
+    outlier_max_range: 3.0
     use_voxel_filter: true
     voxel_leaf_size: 0.1
     transform_timeout: 0.1

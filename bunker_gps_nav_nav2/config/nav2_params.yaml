@@ -121,17 +121,29 @@ global_costmap:
         z_voxels: 16
         max_obstacle_height: 0.6
         mark_threshold: 0
-        observation_sources: cloud
+        # Mark filtered nonground points; clear using original LiDAR returns.
+        observation_sources: cloud clearing_cloud
         cloud:
           topic: /navigation/obstacles
           sensor_frame: os_lidar
           data_type: PointCloud2
           marking: true
-          clearing: true
+          clearing: false
           min_obstacle_height: -0.3
           max_obstacle_height: 0.6
           obstacle_min_range: 0.3
           obstacle_max_range: 28.0
+          observation_persistence: 0.0
+        clearing_cloud:
+          topic: /ouster/points
+          sensor_frame: os_lidar
+          data_type: PointCloud2
+          marking: false
+          clearing: true
+          # Endpoint bounds in map, not os_lidar. Keep ground (~-0.3m) and
+          # background hits; raytracing clips rays to the voxel grid volume.
+          min_obstacle_height: -1.0
+          max_obstacle_height: 3.0
           raytrace_min_range: 0.3
           raytrace_max_range: 29.0
           observation_persistence: 0.0
@@ -167,17 +179,28 @@ local_costmap:
         z_voxels: 16
         max_obstacle_height: 0.6
         mark_threshold: 0
-        observation_sources: cloud
+        observation_sources: cloud clearing_cloud
         cloud:
           topic: /navigation/obstacles
           sensor_frame: os_lidar
           data_type: PointCloud2
           marking: true
-          clearing: true
+          clearing: false
           min_obstacle_height: -0.25
           max_obstacle_height: 0.6
           obstacle_min_range: 0.3
           obstacle_max_range: 9.0
+          observation_persistence: 0.0
+        clearing_cloud:
+          topic: /ouster/points
+          sensor_frame: os_lidar
+          data_type: PointCloud2
+          marking: false
+          clearing: true
+          # Endpoint bounds in odom. Include ground and background returns
+          # beyond the marking band; rays are clipped to the voxel volume.
+          min_obstacle_height: -1.0
+          max_obstacle_height: 3.0
           raytrace_min_range: 0.3
           raytrace_max_range: 10.0
           observation_persistence: 0.0
